@@ -1,0 +1,10 @@
+User-agent: *
+
+Allow: /api
+Allow: /api/available
+Allow: /api/login
+Allow: /api/letters/post
+Allow: /api/letters/public
+Allow: /api/letters/all
+
+Disallow: /
