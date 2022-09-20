@@ -12,7 +12,6 @@ RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backen
 
 # Verification
 RUN gpg --verify backend-bin.gpg
-RUN gpg --verify backend-bin
 
 # FROM rust:1.63-slim-buster
 
