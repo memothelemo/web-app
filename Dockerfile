@@ -1,18 +1,3 @@
-FROM node:16
-WORKDIR /backend
-
-RUN apt-get update && apt-get install -y gnupg wget
-
-# Download my GPG keys from the server
-RUN gpg --keyserver keyserver.ubuntu.com --recv-keys 80dcc4468de6f8c9
-
-# Download binary releases from GitHub Releases
-RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backend-bin"
-RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backend-bin.gpg"
-
-# Verification
-RUN gpg --verify backend-bin.gpg
-
 # FROM rust:1.63-slim-buster
 
 # RUN apt-get update \
@@ -60,10 +45,20 @@ RUN npm ci --force
 RUN npm run build
 
 FROM debian:buster-slim
-RUN apt-get update
+WORKDIR /backend
 
+RUN apt-get update && apt-get install -y gnupg wget
+
+# Download my GPG keys from the server
+RUN gpg --keyserver keyserver.ubuntu.com --recv-keys 80dcc4468de6f8c9
+
+# Download binary releases from GitHub Releases
+RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backend-bin"
+RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backend-bin.gpg"
+
+# Verification
+RUN gpg --verify backend-bin.gpg
 EXPOSE 8000
 
 # To avoid problems when loading static files later on
-WORKDIR /backend
 CMD ["./backend-bin"]
