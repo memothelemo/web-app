@@ -47,4 +47,4 @@ EXPOSE 8000
 
 # To avoid problems when loading static files later on
 WORKDIR /backend
-CMD ["backend_bin"]
+CMD ["backend_lib"]
