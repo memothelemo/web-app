@@ -28,7 +28,10 @@ pub fn server() -> rocket::Rocket<Build> {
 
     #[cfg(not(debug_assertions))]
     let config = RocketConfig {
-        port: std::env::var("PORT").expect("failed to get PORT"),
+        port: std::env::var("PORT")
+            .expect("failed to get PORT")
+            .parse::<u16>()
+            .expect("invalid PORT value"),
         ..RocketConfig::debug_default()
     };
 

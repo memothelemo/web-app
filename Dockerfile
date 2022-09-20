@@ -16,15 +16,19 @@ COPY ./Cargo.lock ./Cargo.lock
 COPY ./backend/Cargo.toml ./Cargo.toml
 
 # Build only the dependencies to cache them
+RUN mkdir -p src/bin
+RUN mv src/main.rs src/bin/main.rs
+
 RUN cargo build --release
-RUN rm src/*.rust
+RUN rm -rf src/*.rs
+RUN rm -rf src/bin/main.rs
 
 # Copy the source code
-COPY ./src ./src
+COPY ./backend/src ./src
 
 # Build for release
-RUN rm ./target/release/deps/backend_lib*
-RUN rm ./target/release/deps/backend_bin*
+RUN rm -rf ./target/release/deps/backend_lib*
+RUN rm -rf ./target/release/deps/backend_bin*
 RUN cargo install --path .
 
 # Load the frontend code
@@ -33,10 +37,10 @@ FROM node:16
 WORKDIR /frontend
 
 # We need to compile our code from TypeScript to JavaScript
-COPY . .
+COPY ./frontend .
 
 # Install app dependencies
-RUN npm install
+RUN npm install --force
 
 # Build the entire project
 RUN npm run build
@@ -48,4 +52,4 @@ EXPOSE 8000
 
 # To avoid problems when loading static files later on
 WORKDIR /backend
-CMD ["backend_lib"]
+CMD ["backend_bin"]
