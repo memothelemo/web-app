@@ -1,6 +1,6 @@
-use frontend_lib::db::submission::SubmissionQuery;
-use frontend_lib::db::{DbClient, Queryable};
-use frontend_lib::errors::ApiError;
+use backend_lib::db::submission::SubmissionQuery;
+use backend_lib::db::{DbClient, Queryable};
+use backend_lib::errors::ApiError;
 
 use rocket::serde::json::Json;
 use rocket::{catchers, routes, State};
@@ -15,10 +15,10 @@ type RocketBuild = rocket::Rocket<rocket::Build>;
 pub mod forms {
     use super::*;
 
-    use frontend_lib::db::letters::{CreateLetterQuery, GetLetterQuery};
-    use frontend_lib::db::user::GetUserQuery;
-    use frontend_lib::db::MaybeQueryable;
-    use frontend_lib::restrictions::RateLimit;
+    use backend_lib::db::letters::{CreateLetterQuery, GetLetterQuery};
+    use backend_lib::db::user::GetUserQuery;
+    use backend_lib::db::MaybeQueryable;
+    use backend_lib::restrictions::RateLimit;
 
     use rocket::form::Form;
     use rocket::http::Status;

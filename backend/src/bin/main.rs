@@ -3,9 +3,11 @@ use env_logger::Env;
 use figment::providers::{Format, Toml};
 use figment::Figment;
 
-use frontend_lib::db::create_db_client;
-use frontend_lib::Config;
+use backend_lib::db::create_db_client;
+use backend_lib::Config;
 
+#[cfg(not(debug_assertions))]
+use rocket::fs::{FileServer, relative};
 use rocket::Build;
 
 mod routes;
@@ -25,6 +27,12 @@ pub fn server(figment: Figment) -> rocket::Rocket<Build> {
     let mut rocket = rocket::custom(figment).manage(db).manage(config);
 
     rocket = routes::api::apply(rocket);
+
+    #[cfg(not(debug_assertions))]
+    {
+        rocket = rocket.mount("/", FileServer::from(relative!("../frontend/build")));
+    }
+
     rocket
 }
 
