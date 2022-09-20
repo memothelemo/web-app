@@ -53,12 +53,8 @@ WORKDIR /frontend
 # We need to compile our code from TypeScript to JavaScript
 COPY ./frontend .
 
-# Install bun to install dependencies faster
-# Bun doesn't prompt anything to install there so no worries
-RUN curl https://bun.sh/install | bash
-
 # Install app dependencies
-RUN bun install
+RUN npm ci --force
 
 # Build the entire project
 RUN npm run build
