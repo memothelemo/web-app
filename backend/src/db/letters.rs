@@ -6,6 +6,19 @@ use super::{DbClient, MaybeQueryable, Queryable};
 use crate::schema::Letter;
 
 #[derive(Display, Serialize)]
+#[display(fmt = "GetPublicLetters")]
+pub struct GetPublicLettersQuery;
+
+#[rocket::async_trait]
+impl Queryable for GetPublicLettersQuery {
+    type Output = Vec<Letter>;
+
+    async fn query_inner(self, client: &DbClient) -> Result<reqwest::Response> {
+        Ok(client.from("letters").select("*").execute().await?)
+    }
+}
+
+#[derive(Display, Serialize)]
 #[display(fmt = "CreateLetter({author})")]
 pub struct CreateLetterQuery<'a> {
     author: &'a str,

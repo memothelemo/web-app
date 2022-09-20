@@ -1,0 +1,43 @@
+{
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es2021": true
+    },
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {},
+    "plugins": [
+        "@typescript-eslint",
+        "@typescript-eslint/eslint-plugin",
+        "prettier"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:react/recommended"
+    ],
+    "rules": {
+        "no-unused-vars": "warn",
+        "explicit-function-return-type": "off",
+        "interface-name-prefix": "off",
+        "no-empty-function": "warn",
+        "no-empty-interface": "off",
+        "no-namespace": "off",
+        "no-non-null-assertion": "off",
+        "no-use-before-define": "off",
+        "explicit-module-boundary-types": "off",
+        "no-var-requires": "off",
+        "no-unused-expressions": "off",
+        "prettier/prettier": [
+            "warn",
+            {
+                "arrowParens": "avoid",
+                "semi": true,
+                "trailingComma": "all",
+                "singleQuote": false,
+                "printWidth": 80,
+                "tabWidth": 2,
+                "useTabs": false
+            }
+        ]
+    }
+  }

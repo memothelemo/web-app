@@ -74,7 +74,7 @@ fn create_letter() {
         .dispatch();
 
     assert_eq!(response.status(), Status::Ok);
-    serde_json::from_str::<frontend_lib::schema::Letter>(&response.into_string().unwrap()).unwrap();
+    serde_json::from_str::<backend_lib::schema::Letter>(&response.into_string().unwrap()).unwrap();
 
     // duplication test
     let response = client

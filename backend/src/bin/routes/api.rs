@@ -155,6 +155,18 @@ pub async fn root() -> JsonResponse<'static> {
     })))
 }
 
+mod letters {
+    use super::*;
+    use backend_lib::{db::letters::GetPublicLettersQuery, restrictions::RateLimit};
+
+    #[rocket::get("/public")]
+    pub async fn public(_guard: RateLimit<'_>, db: &State<DbClient>) -> JsonResponse<'static> {
+        Ok(Json(
+            serde_json::to_value(GetPublicLettersQuery.query(db).await?).unwrap(),
+        ))
+    }
+}
+
 #[rocket::get("/available")]
 pub async fn available(db: &State<DbClient>) -> JsonResponse {
     let state = SubmissionQuery.query(db).await?;
@@ -167,5 +179,6 @@ pub fn apply(rocket: RocketBuild) -> RocketBuild {
     rocket
         .mount("/api", routes![root, available])
         .mount("/api", routes![forms::login, forms::post_letter])
+        .mount("/api/letters", routes![letters::public])
         .register("/api", catchers!(rocket_governor_catcher))
 }
