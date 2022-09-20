@@ -1,2 +1,3 @@
 # Rust artifacts
 /backend/target
+/target

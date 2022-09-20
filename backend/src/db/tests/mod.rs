@@ -10,13 +10,6 @@ use serde::Deserialize;
 #[cfg(feature = "test_log")]
 use env_logger::Env;
 
-use figment::providers::{Format, Toml};
-use figment::Figment;
-
-pub fn figment() -> Figment {
-    Figment::from(rocket::Config::debug_default()).merge(Toml::file("Rocket.toml").nested())
-}
-
 pub fn client() -> DbClient {
     #[cfg(feature = "test_log")]
     env_logger::builder()
@@ -24,7 +17,11 @@ pub fn client() -> DbClient {
         .try_init()
         .ok();
 
-    let config: Config = figment().extract().expect("could not load configuration");
+    let config: Config = Config {
+        database_url: std::env::var("DATABASE_URL").expect("failed to get DATABASE_URL"),
+        database_key: std::env::var("DATABASE_KEY").expect("failed to get DATABASE_URL"),
+        salt_code: std::env::var("SALT_CODE").expect("failed to get SALT_CODE"),
+    };
     create_db_client(config.database_url, config.database_key)
 }
 

@@ -1,14 +1,11 @@
 use env_logger::Env;
 
-use figment::providers::{Format, Toml};
-use figment::Figment;
-
 use backend_lib::db::create_db_client;
 use backend_lib::Config;
 
 #[cfg(not(debug_assertions))]
-use rocket::fs::{FileServer, relative};
-use rocket::Build;
+use rocket::fs::{relative, FileServer};
+use rocket::{Build, Config as RocketConfig};
 
 mod routes;
 #[cfg(test)]
@@ -20,12 +17,28 @@ mod tests;
 ///
 /// It will panic if the configuration file (Rocket.toml) is missing
 /// or has invalid fields or values inside than it expects.
-pub fn server(figment: Figment) -> rocket::Rocket<Build> {
-    let config: Config = figment.extract().expect("could not read configuration");
-    let db = create_db_client(&config.database_url, &config.database_key);
+pub fn server() -> rocket::Rocket<Build> {
+    let env_config: Config = Config {
+        database_url: std::env::var("DATABASE_URL").expect("failed to get DATABASE_URL"),
+        database_key: std::env::var("DATABASE_KEY").expect("failed to get DATABASE_URL"),
+        salt_code: std::env::var("SALT_CODE").expect("failed to get SALT_CODE"),
+    };
 
-    let mut rocket = rocket::custom(figment).manage(db).manage(config);
+    let db = create_db_client(&env_config.database_url, &env_config.database_key);
 
+    #[cfg(not(debug_assertions))]
+    let config = RocketConfig {
+        port: std::env::var("PORT").expect("failed to get PORT"),
+        ..RocketConfig::debug_default()
+    };
+
+    #[cfg(debug_assertions)]
+    let config = RocketConfig {
+        port: 8000,
+        ..RocketConfig::debug_default()
+    };
+
+    let mut rocket = rocket::custom(config).manage(db).manage(env_config);
     rocket = routes::api::apply(rocket);
 
     #[cfg(not(debug_assertions))]
@@ -54,15 +67,6 @@ fn preload() {
 async fn main() -> anyhow::Result<()> {
     preload();
 
-    #[cfg(debug_assertions)]
-    let config = rocket::Config::debug_default();
-
-    #[cfg(not(debug_assertions))]
-    let config = rocket::Config::release_default();
-
-    let _ = server(Figment::from(config).merge(Toml::file("Rocket.toml").nested()))
-        .launch()
-        .await?;
-
+    let _ = server().launch().await?;
     Ok(())
 }

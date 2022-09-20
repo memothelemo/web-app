@@ -4,8 +4,6 @@ use env_logger::Env;
 use faker_rand::en_us::names::FullName;
 use faker_rand::lorem::Paragraph;
 
-use figment::providers::{Format, Toml};
-use figment::Figment;
 use pretty_assertions::assert_eq;
 
 use rocket::http::{ContentType, Status};
@@ -19,10 +17,7 @@ fn client() -> Client {
         .try_init()
         .ok();
 
-    let figment =
-        Figment::from(rocket::Config::debug_default()).merge(Toml::file("Rocket.toml").nested());
-
-    Client::tracked(crate::server(figment)).expect("valid rocket instance")
+    Client::tracked(crate::server()).expect("valid rocket instance")
 }
 
 #[test]
