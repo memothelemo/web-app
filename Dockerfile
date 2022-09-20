@@ -47,7 +47,7 @@ RUN npm run build
 FROM debian:buster-slim
 WORKDIR /backend
 
-RUN apt-get update && apt-get install -y gnupg wget glibc
+RUN apt-get update && apt-get install -y gnupg wget binutils
 
 # Download my GPG keys from the server
 RUN gpg --keyserver keyserver.ubuntu.com --recv-keys 80dcc4468de6f8c9
