@@ -1,7 +1,5 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::Deserialize;
-
-use super::get_content_type;
 
 /// Structure object for a Postgrest API error.
 #[derive(Debug, Deserialize)]
@@ -13,13 +11,21 @@ pub struct SupabaseError {
 }
 
 /// Handles any Supabase postgrest API errors.
-pub async fn handle_supabase_error<T>(
+pub async fn postgrest_err_info(
     query_name: impl AsRef<str>,
     response: reqwest::Response,
-) -> Result<T> {
+) -> Result<(String, String)> {
     let query_name = query_name.as_ref();
-    let (message, code) = if get_content_type(response.headers())
-        .map(|v| v.subtype() == mime::JSON)
+    if response
+        .headers()
+        .get("content-type")
+        .map(|v| {
+            if let Ok(str) = v.to_str() {
+                str.ends_with("json; charset=utf-8")
+            } else {
+                false
+            }
+        })
         .unwrap_or_default()
     {
         let error = serde_json::from_str::<SupabaseError>(&response.text().await?)?;
@@ -30,14 +36,13 @@ pub async fn handle_supabase_error<T>(
             error.message
         );
 
-        (error.message, error.code)
+        Ok((error.message, error.code))
     } else {
         let message = response
             .text()
             .await
             .unwrap_or_else(|_| String::from("<unknown error>"));
         log::debug!("{} => query error (none)", query_name);
-        (message, String::from("<none>"))
-    };
-    Err(anyhow!("{}: {}", code, message))
+        Ok((message, String::from("<none>")))
+    }
 }

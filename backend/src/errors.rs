@@ -9,8 +9,6 @@ mod api {
     use std::fmt::Display;
     use std::io::Cursor;
 
-    use crate::util::accepts_media_type;
-
     #[derive(Debug)]
     pub struct ApiError<'a> {
         message: Cow<'a, str>,
@@ -30,6 +28,12 @@ mod api {
                 message: Cow::Owned(message.to_string()),
                 status: Status::BadRequest,
             }
+        }
+    }
+
+    impl<'a> ApiError<'a> {
+        pub fn status(self, status: Status) -> Self {
+            Self { status, ..self }
         }
     }
 
@@ -55,22 +59,28 @@ mod api {
     }
 
     impl<'a, 'r> Responder<'r, 'static> for ApiError<'a> {
-        fn respond_to(self, request: &'r rocket::Request<'_>) -> rocket::response::Result<'static> {
-            if let Some(accept) = request.accept() {
-                static UNSUPPORTED_ENCODING: &str = "JSON encoding is required to use this API.";
+        fn respond_to(
+            self,
+            _request: &'r rocket::Request<'_>,
+        ) -> rocket::response::Result<'static> {
+            // if let Some(accept) = request.accept() {
+            //     static UNSUPPORTED_ENCODING: &str = "JSON encoding is required to use this API.";
 
-                let accepts_json = accepts_media_type(accept, |c| c.is_json());
-                if !accepts_json {
-                    return Response::build()
-                        .sized_body(
-                            UNSUPPORTED_ENCODING.len(),
-                            Cursor::new(UNSUPPORTED_ENCODING),
-                        )
-                        .header(ContentType::Text)
-                        .status(Status::UnsupportedMediaType)
-                        .ok();
-                }
-            }
+            //     let accepts_json = accepts_media_type(accept, |c| {
+            //         dbg!(c);
+            //         c.is_json()
+            //     });
+            //     if !accepts_json {
+            //         return Response::build()
+            //             .sized_body(
+            //                 UNSUPPORTED_ENCODING.len(),
+            //                 Cursor::new(UNSUPPORTED_ENCODING),
+            //             )
+            //             .header(ContentType::Text)
+            //             .status(Status::UnsupportedMediaType)
+            //             .ok();
+            //     }
+            // }
 
             let output = serde_json::to_string(&json!({
                 "message": self.message,

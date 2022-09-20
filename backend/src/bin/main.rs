@@ -8,6 +8,10 @@ use frontend_lib::Config;
 
 use rocket::Build;
 
+mod routes;
+#[cfg(test)]
+mod tests;
+
 /// Creates a Rocket server
 ///
 /// # Panics
@@ -18,7 +22,10 @@ pub fn server(figment: Figment) -> rocket::Rocket<Build> {
     let config: Config = figment.extract().expect("could not read configuration");
     let db = create_db_client(&config.database_url, &config.database_key);
 
-    rocket::custom(figment).manage(db).manage(config)
+    let mut rocket = rocket::custom(figment).manage(db).manage(config);
+
+    rocket = routes::api::apply(rocket);
+    rocket
 }
 
 /// Preloads any prequisities to the program before it
@@ -38,10 +45,16 @@ fn preload() {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     preload();
-    let _ = server(
-        Figment::from(rocket::Config::debug_default()).merge(Toml::file("Rocket.toml").nested()),
-    )
-    .launch()
-    .await?;
+
+    #[cfg(debug_assertions)]
+    let config = rocket::Config::debug_default();
+
+    #[cfg(not(debug_assertions))]
+    let config = rocket::Config::release_default();
+
+    let _ = server(Figment::from(config).merge(Toml::file("Rocket.toml").nested()))
+        .launch()
+        .await?;
+
     Ok(())
 }
