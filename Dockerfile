@@ -57,8 +57,8 @@ RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.7/backen
 RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.7/backend-bin-heroku.sig"
 
 # Verification
-RUN gpg --verify backend-bin.sig
-RUN chmod 577 ./backend-bin
+RUN gpg --verify backend-bin-heroku.sig
+RUN chmod 577 ./backend-bin-heroku
 
 # To avoid problems when loading static files later on
-CMD ["./backend-bin"]
+CMD ["./backend-bin-heroku"]
