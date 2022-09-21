@@ -79,6 +79,14 @@ pub mod forms {
         db: &State<DbClient>,
         form: Json<PostLetterForm<'_>>,
     ) -> JsonResponse<'static> {
+        // check if we accept submissions
+        let state = SubmissionQuery.query(db).await?;
+        if !state.available {
+            return Err(ApiError::borrowed("cannot accept any new submissions")
+                .status(Status::Unauthorized)
+                .into());
+        }
+
         // validate also to the server and sanitize dirty HTML
         // stuff to avoid XSS
         let org_auth_len = form.author.len();
