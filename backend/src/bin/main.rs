@@ -58,7 +58,11 @@ pub fn server() -> rocket::Rocket<Build> {
     #[cfg(debug_assertions)]
     let config = RocketConfig {
         address,
-        port: 8000,
+        port: if let Some(port) = std::env::var("PORT").ok() {
+            port.parse::<u16>().expect("invalid PORT value")
+        } else {
+            3080
+        },
         ..RocketConfig::debug_default()
     };
 

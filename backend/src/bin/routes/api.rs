@@ -66,18 +66,16 @@ pub mod forms {
     }
 
     #[derive(Deserialize, FromForm)]
-    pub struct PostLetterForm<'a> {
-        #[serde(borrow)]
-        pub author: &'a str,
-        #[serde(borrow)]
-        pub message: &'a str,
+    pub struct PostLetterForm {
+        pub author: String,
+        pub message: String,
         #[serde(default)]
         pub secret: bool,
     }
 
     async fn post_letter_inner(
         db: &State<DbClient>,
-        form: Json<PostLetterForm<'_>>,
+        form: Json<PostLetterForm>,
     ) -> JsonResponse<'static> {
         // check if we accept submissions
         let state = SubmissionQuery.query(db).await?;
@@ -91,7 +89,7 @@ pub mod forms {
         // stuff to avoid XSS
         let org_auth_len = form.author.len();
         let org_msg_len = form.message.len();
-        let author = ammonia::clean(form.author);
+        let author = ammonia::clean(&form.author);
         if org_auth_len > author.len() {
             log::warn!(
                 "[api/letters/post] XSS detected (author)! original = {} > cleaned = {}",
@@ -104,13 +102,13 @@ pub mod forms {
                 .status(Status::BadRequest)
                 .into());
         }
-        let letter = GetLetterQuery::Author(form.author).query(&db).await?;
+        let letter = GetLetterQuery::Author(&form.author).query(&db).await?;
         if letter.is_some() {
             return Err(ApiError::borrowed("duplicated letter")
                 .status(Status::Conflict)
                 .into());
         }
-        let message = ammonia::clean(form.message);
+        let message = ammonia::clean(&form.message);
         if org_msg_len > message.len() {
             log::warn!(
                 "[api/letters/post] XSS detected (message)! original = {} > cleaned = {}",
@@ -141,7 +139,7 @@ pub mod forms {
     pub async fn post_letter(
         _guard: RateLimit<'_>,
         db: &State<DbClient>,
-        form: Json<PostLetterForm<'_>>,
+        form: Json<PostLetterForm>,
     ) -> JsonResponse<'static> {
         post_letter_inner(db, form).await
     }
@@ -150,7 +148,7 @@ pub mod forms {
     #[rocket::post("/letters/post", data = "<form>")]
     pub async fn post_letter(
         db: &State<DbClient>,
-        form: Json<PostLetterForm<'_>>,
+        form: Json<PostLetterForm>,
     ) -> JsonResponse<'static> {
         post_letter_inner(db, form).await
     }
