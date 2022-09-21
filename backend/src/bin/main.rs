@@ -1,3 +1,8 @@
+use std::{
+    net::{IpAddr, Ipv4Addr},
+    str::FromStr,
+};
+
 use env_logger::Env;
 
 use backend_lib::db::create_db_client;
@@ -25,18 +30,25 @@ pub fn server() -> rocket::Rocket<Build> {
     };
 
     let db = create_db_client(&env_config.database_url, &env_config.database_key);
+    let address = if let Ok(host) = std::env::var("HOST") {
+        IpAddr::from_str(&host).expect("failed to parse IpAddr with HOST env variable")
+    } else {
+        Ipv4Addr::new(127, 0, 0, 1).into()
+    };
 
     #[cfg(not(debug_assertions))]
     let config = RocketConfig {
+        address,
         port: std::env::var("PORT")
             .expect("failed to get PORT")
             .parse::<u16>()
             .expect("invalid PORT value"),
-        ..RocketConfig::debug_default()
+        ..RocketConfig::release_default()
     };
 
     #[cfg(debug_assertions)]
     let config = RocketConfig {
+        address,
         port: 8000,
         ..RocketConfig::debug_default()
     };

@@ -59,7 +59,6 @@ RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backen
 # Verification
 RUN gpg --verify backend-bin.sig
 RUN chmod 577 ./backend-bin
-EXPOSE 8000
 
 # To avoid problems when loading static files later on
 CMD ["./backend-bin"]
