@@ -8,6 +8,7 @@ name = "backend-bin"
 path = "src/bin/main.rs"
 
 [features]
+heroku = []
 test_log = []
 
 [dependencies]

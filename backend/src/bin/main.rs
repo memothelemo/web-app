@@ -30,10 +30,15 @@ pub fn server() -> rocket::Rocket<Build> {
     };
 
     let db = create_db_client(&env_config.database_url, &env_config.database_key);
+
+    // very niche solution...
     let address = if let Ok(host) = std::env::var("HOST") {
         IpAddr::from_str(&host).expect("failed to parse IpAddr with HOST env variable")
     } else {
-        Ipv4Addr::new(127, 0, 0, 1).into()
+        #[cfg(not(feature = "heroku"))]
+        { Ipv4Addr::new(127, 0, 0, 1).into() }
+        #[cfg(feature = "heroku")]
+        { Ipv4Addr::new(0, 0, 0, 0).into() }
     };
 
     #[cfg(not(debug_assertions))]
