@@ -53,8 +53,8 @@ RUN apt-get update && apt-get install -y gnupg wget binutils
 RUN gpg --keyserver keyserver.ubuntu.com --recv-keys 80dcc4468de6f8c9
 
 # Download binary releases from GitHub Releases
-RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.7/backend-bin"
-RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.7/backend-bin.sig"
+RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.7/backend-bin-heroku"
+RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.7/backend-bin-heroku.sig"
 
 # Verification
 RUN gpg --verify backend-bin.sig
