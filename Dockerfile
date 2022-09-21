@@ -54,10 +54,10 @@ RUN gpg --keyserver keyserver.ubuntu.com --recv-keys 80dcc4468de6f8c9
 
 # Download binary releases from GitHub Releases
 RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backend-bin"
-RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backend-bin.gpg"
+RUN wget "https://github.com/memothelemo/web-app/releases/download/v0.1.0/backend-bin.sig"
 
 # Verification
-RUN gpg --verify backend-bin.gpg
+RUN gpg --verify backend-bin.sig
 RUN chmod 577 ./backend-bin
 EXPOSE 8000
 
