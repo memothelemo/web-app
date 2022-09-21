@@ -46,7 +46,7 @@ pub fn server() -> rocket::Rocket<Build> {
 
     #[cfg(not(debug_assertions))]
     {
-        rocket = rocket.mount("/", FileServer::from(relative!("../frontend/build")));
+        rocket = rocket.mount("/", FileServer::from("../frontend/build"));
     }
 
     rocket
