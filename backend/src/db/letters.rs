@@ -14,7 +14,12 @@ impl Queryable for GetPublicLettersQuery {
     type Output = Vec<Letter>;
 
     async fn query_inner(self, client: &DbClient) -> Result<reqwest::Response> {
-        Ok(client.from("letters").select("*").execute().await?)
+        Ok(client
+            .from("letters")
+            .select("*")
+            .eq("secret", "false")
+            .execute()
+            .await?)
     }
 }
 

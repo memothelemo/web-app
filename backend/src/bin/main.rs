@@ -36,9 +36,13 @@ pub fn server() -> rocket::Rocket<Build> {
         IpAddr::from_str(&host).expect("failed to parse IpAddr with HOST env variable")
     } else {
         #[cfg(not(feature = "heroku"))]
-        { Ipv4Addr::new(127, 0, 0, 1).into() }
+        {
+            Ipv4Addr::new(127, 0, 0, 1).into()
+        }
         #[cfg(feature = "heroku")]
-        { Ipv4Addr::new(0, 0, 0, 0).into() }
+        {
+            Ipv4Addr::new(0, 0, 0, 0).into()
+        }
     };
 
     #[cfg(not(debug_assertions))]
