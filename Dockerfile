@@ -44,7 +44,7 @@ RUN npm ci --force
 # Build the entire project
 RUN npm run build
 
-FROM debian:buster-slim
+# Move to the backend as a working directory
 WORKDIR /backend
 
 RUN apt-get update && apt-get install -y gnupg wget binutils
