@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags: ["*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
+
+      - name: Build
+        run: cargo build --verbose --release
+
+      - name: Copy the normal variant
+        run: cp ./target/release/backend-bin ./backend-bin
+
+      - name: Build for the Heroku variant
+        run: cargo build --verbose --release --features heroku
+
+      - name: Copy the Heroku variant
+        run: cp ./target/release/backend-bin ./backend-bin-heroku
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./backend-bin-heroku
+            ./backend-bin
