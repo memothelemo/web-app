@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import SubmissionPart from "./part";
 import "../main.css";
 import { Card, Typography } from "antd";
+import OSSPromotion from "../promotion";
 
 function SubmissionPublished() {
   return (
@@ -27,9 +28,14 @@ function SubmissionPublished() {
 
 export default function SubmissionPage() {
   const [submitted, setSubmitted] = useState(false);
-  return submitted ? (
-    <SubmissionPublished />
-  ) : (
-    <SubmissionPart onSubmitted={() => setSubmitted(true)} />
+  return (
+    <>
+      {submitted ? (
+        <SubmissionPublished />
+      ) : (
+        <SubmissionPart onSubmitted={() => setSubmitted(true)} />
+      )}
+      <OSSPromotion />
+    </>
   );
 }

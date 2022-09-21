@@ -1,3 +1,4 @@
 # Rust artifacts
 /backend/target
 /target
+.env

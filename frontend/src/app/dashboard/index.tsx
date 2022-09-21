@@ -1,9 +1,34 @@
-import { Card, List, Typography } from "antd";
+import { Card, Divider, List, Typography } from "antd";
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useReducer } from "react";
 import { Letter } from "../types";
 import { DateTime } from "luxon";
 import { useMediaQuery } from "react-responsive";
+
+interface State {
+  loaded: boolean;
+  letters: Letter[];
+}
+
+type Action = {
+  type: "LETTERS_LOADED";
+  letters: Letter[];
+};
+
+const reducer = (_state: State, action: Action): State => {
+  switch (action.type) {
+    case "LETTERS_LOADED":
+      return {
+        loaded: true,
+        letters: [...action.letters],
+      };
+    default:
+      return {
+        loaded: false,
+        letters: [],
+      };
+  }
+};
 
 const LetterCard: React.FC<Letter> = letter => {
   const date = DateTime.fromISO(letter.created_at);
@@ -24,7 +49,10 @@ const LetterCard: React.FC<Letter> = letter => {
 };
 
 export default function DashboardPage() {
-  const [letters, setLetters] = useState<Letter[]>([]);
+  const [info, setInfo] = useReducer(reducer, {
+    loaded: false,
+    letters: [],
+  });
   const isMobile = useMediaQuery({ query: `(max-width: 760px)` });
 
   useEffect(() => {
@@ -32,7 +60,7 @@ export default function DashboardPage() {
     const c = axios.CancelToken.source();
     axios
       .get("api/letters/public", { cancelToken: c.token })
-      .then(res => setLetters(res.data))
+      .then(res => setInfo({ type: "LETTERS_LOADED", letters: res.data }))
       .catch(err => {
         if (axios.isCancel(err)) {
           console.log("cancelled");
@@ -43,21 +71,29 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div
-      style={{
-        margin: "30px",
-        justifyContent: "center",
-        display: "flex",
-      }}
-    >
-      <List
+    <>
+      <Typography.Title
+        style={{ marginTop: "20px", fontSize: "30px", textAlign: "center" }}
+      >
+        Public Letters ({info.letters.length} in total)
+      </Typography.Title>
+      <Divider />
+      <div
         style={{
-          width: isMobile ? 400 : 700,
+          margin: "30px",
+          justifyContent: "center",
+          display: "flex",
         }}
-        itemLayout="vertical"
-        dataSource={letters}
-        renderItem={v => <LetterCard key={v.id} {...v} />}
-      />
-    </div>
+      >
+        <List
+          style={{
+            width: isMobile ? 400 : 700,
+          }}
+          itemLayout="vertical"
+          dataSource={info.letters}
+          renderItem={v => <LetterCard key={v.id} {...v} />}
+        />
+      </div>
+    </>
   );
 }

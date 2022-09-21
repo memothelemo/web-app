@@ -41,23 +41,22 @@ where
     /// for database error handling and so forth.
     async fn query(self, client: &DbClient) -> Result<Option<Self::Output>> {
         let name = self.to_string();
-        log::debug!("querying (maybe): {}", name);
+        log::info!("querying (maybe): {}", name);
 
         let response = self.query_inner(client).await?;
         if response.status().is_success() {
-            log::debug!("[{}] query done", name);
+            log::info!("[{}] query done", name);
 
             let text = &response.text().await?;
             log::trace!("[{}] received json <= {}", name, text);
 
-            dbg!(text);
-
             Ok(Some(serde_json::from_str(text)?))
         } else {
-            let (message, code) = postgrest_err_info(name, response).await?;
+            let (message, code) = postgrest_err_info(&name, response).await?;
             if code == "PGRST116" {
                 Ok(None)
             } else {
+                log::error!("[{}] [{}] {}", name, code, message);
                 Err(anyhow!("{}: {}", message, code))
             }
         }
@@ -83,18 +82,19 @@ where
     /// for database error handling and so forth.
     async fn query(self, client: &DbClient) -> Result<Self::Output> {
         let name = self.to_string();
-        log::debug!("querying: {}", name);
+        log::info!("querying: {}", name);
 
         let response = self.query_inner(client).await?;
         if response.status().is_success() {
-            log::debug!("[{}] query done", name);
+            log::info!("[{}] query done", name);
 
             let text = &response.text().await?;
             log::trace!("[{}] received json <= {}", name, text);
 
             Ok(serde_json::from_str(text)?)
         } else {
-            let (message, code) = postgrest_err_info(name, response).await?;
+            let (message, code) = postgrest_err_info(&name, response).await?;
+            log::error!("[{}] [{}] {}", name, code, message);
             Err(anyhow!("{}: {}", message, code))
         }
     }

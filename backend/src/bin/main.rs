@@ -9,7 +9,7 @@ use backend_lib::db::create_db_client;
 use backend_lib::Config;
 
 #[cfg(not(debug_assertions))]
-use rocket::fs::{relative, FileServer};
+use rocket::fs::FileServer;
 use rocket::{Build, Config as RocketConfig};
 
 mod routes;
@@ -63,7 +63,10 @@ pub fn server() -> rocket::Rocket<Build> {
 
     #[cfg(not(debug_assertions))]
     {
-        rocket = rocket.mount("/", FileServer::from("../frontend/build"));
+        use rocket::routes;
+
+        rocket = rocket.mount("/", FileServer::from("../frontend/build").rank(1));
+        rocket = rocket.mount("/", routes![routes::file_server_fallback]);
     }
 
     rocket
@@ -72,6 +75,9 @@ pub fn server() -> rocket::Rocket<Build> {
 /// Preloads any prequisities to the program before it
 /// runs the server (it includes logging)
 fn preload() {
+    // optional .env file
+    dotenv::dotenv().ok();
+
     #[cfg(debug_assertions)]
     let default_env = "debug";
 
