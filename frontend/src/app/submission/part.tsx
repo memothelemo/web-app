@@ -88,7 +88,7 @@ export default function SubmissionPart(props: Props) {
   async function submitLetterAPI() {
     try {
       const response = await axios.post("api/letters/post", { ...info });
-      if (response.status !== 200) {
+      if (response.status !== 201) {
         dispatchDiag({
           type: "PUBLISH_FAILED",
           message:

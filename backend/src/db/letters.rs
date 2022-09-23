@@ -1,86 +1,80 @@
+use crate::models;
+
 use anyhow::Result;
-use derive_more::Display;
-use serde::Serialize;
+use diesel::prelude::*;
+use uuid::Uuid;
 
-use super::{DbClient, MaybeQueryable, Queryable};
-use crate::schema::Letter;
+pub fn insert(
+    conn: &mut PgConnection,
+    entry_author: impl AsRef<str>,
+    entry_message: impl AsRef<str>,
+    entry_secret: bool,
+) -> Result<models::Letter> {
+    let entry_author = entry_author.as_ref();
+    let entry_message = entry_message.as_ref();
 
-#[derive(Display, Serialize)]
-#[display(fmt = "GetPublicLetters")]
-pub struct GetPublicLettersQuery;
+    log::info!("[insert] posting letter");
+    log::info!("[insert] author = {:?}", entry_author.len());
+    log::info!("[insert] secret = {:?}", entry_secret);
 
-#[rocket::async_trait]
-impl Queryable for GetPublicLettersQuery {
-    type Output = Vec<Letter>;
+    use crate::schema::letters::dsl::*;
 
-    async fn query_inner(self, client: &DbClient) -> Result<reqwest::Response> {
-        Ok(client
-            .from("letters")
-            .select("*")
-            .eq("secret", "false")
-            .execute()
-            .await?)
-    }
+    let new_letter = models::NewLetter {
+        author: &entry_author,
+        message: &entry_message,
+        secret: entry_secret,
+    };
+
+    Ok(diesel::insert_into(letters)
+        .values(&new_letter)
+        .get_result(conn)?)
 }
 
-#[derive(Display, Serialize)]
-#[display(fmt = "CreateLetter({author})")]
-pub struct CreateLetterQuery<'a> {
-    author: &'a str,
-    message: &'a str,
-    secret: bool,
+pub fn get_all(conn: &mut PgConnection, offset: usize) -> Result<Vec<models::Letter>> {
+    log::info!("getting all entries");
+    use crate::schema::letters::dsl::*;
+
+    let collection = letters
+        .offset(offset.max(0) as i64)
+        .limit(10)
+        .load::<models::Letter>(conn)?;
+
+    Ok(collection)
 }
 
-impl<'a> CreateLetterQuery<'a> {
-    pub fn new(author: &'a str, message: &'a str) -> Self {
-        Self {
-            author,
-            message,
-            secret: false,
-        }
-    }
+pub fn get_all_public(conn: &mut PgConnection, offset: usize) -> Result<Vec<models::Letter>> {
+    log::info!("getting all public entries");
+    use crate::schema::letters::dsl::*;
 
-    pub fn secret(self, value: bool) -> Self {
-        Self {
-            secret: value,
-            ..self
-        }
-    }
+    let collection = letters
+        .filter(secret.eq(false))
+        .offset(offset.max(0) as i64)
+        .limit(10)
+        .load::<models::Letter>(conn)?;
+
+    Ok(collection)
 }
 
-#[rocket::async_trait]
-impl<'a> Queryable for CreateLetterQuery<'a> {
-    type Output = Letter;
+pub fn find_by_id(conn: &mut PgConnection, uid: &Uuid) -> Result<Option<models::Letter>> {
+    log::info!("finding entry by id = {}", uid);
+    use crate::schema::letters::dsl::*;
 
-    async fn query_inner(self, client: &DbClient) -> Result<reqwest::Response> {
-        Ok(client
-            .from("letters")
-            .insert(serde_json::to_string(&self)?)
-            .single()
-            .execute()
-            .await?)
-    }
+    let letter = letters
+        .filter(id.eq(uid))
+        .first::<models::Letter>(conn)
+        .optional()?;
+
+    Ok(letter)
 }
 
-#[derive(Display, Serialize)]
-pub enum GetLetterQuery<'a> {
-    #[display(fmt = "GetLetter(id = `{_0}`)")]
-    Id(&'a str),
+pub fn find_by_author(conn: &mut PgConnection, creator: &str) -> Result<Option<models::Letter>> {
+    log::info!("finding entry by author = {}", creator);
+    use crate::schema::letters::dsl::*;
 
-    #[display(fmt = "GetLetter(author = `{_0}`)")]
-    Author(&'a str),
-}
+    let letter = letters
+        .filter(author.eq(creator))
+        .first::<models::Letter>(conn)
+        .optional()?;
 
-#[rocket::async_trait]
-impl<'a> MaybeQueryable for GetLetterQuery<'a> {
-    type Output = Letter;
-
-    async fn query_inner(self, client: &DbClient) -> Result<reqwest::Response> {
-        let builder = client.from("letters");
-        let builder = match self {
-            Self::Author(author) => builder.eq("author", author),
-            Self::Id(id) => builder.eq("id", id),
-        };
-        Ok(builder.single().execute().await?)
-    }
+    Ok(letter)
 }

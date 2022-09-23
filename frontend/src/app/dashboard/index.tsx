@@ -59,7 +59,7 @@ export default function DashboardPage() {
     console.log("[DashboardPage] fetching all public letters");
     const c = axios.CancelToken.source();
     axios
-      .get("api/letters/public", { cancelToken: c.token })
+      .get("api/letters", { cancelToken: c.token })
       .then(res => setInfo({ type: "LETTERS_LOADED", letters: res.data }))
       .catch(err => {
         if (axios.isCancel(err)) {
