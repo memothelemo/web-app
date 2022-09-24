@@ -7,6 +7,7 @@ use diesel::PgConnection;
 pub mod letters;
 pub mod reports;
 pub mod state;
+pub mod users;
 
 pub type DbPool = web::Data<r2d2::Pool<ConnectionManager<PgConnection>>>;
 

@@ -33,9 +33,10 @@ diesel::table! {
 diesel::table! {
     users (id) {
         id -> Uuid,
-        created_at -> Timestamptz,
-        username -> Varchar,
+        created_at -> Timestamp,
+        name -> Varchar,
         password -> Text,
+        moderator -> Nullable<Bool>,
     }
 }
 

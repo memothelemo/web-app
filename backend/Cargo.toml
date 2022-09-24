@@ -18,10 +18,12 @@ actix-web = { version = "4.2.1", features = ["openssl"] }
 ammonia = "3.2.1"
 anyhow = "1.0.65"
 async-trait = "0.1.57"
+bcrypt = "0.13.0"
 chrono = { version = "0.4.22", features = ["serde"] }
 diesel = { version = "2.0.0", features = ["postgres", "r2d2", "chrono", "uuid"] }
 dotenv = "0.15.0"
 fern = "0.6.1"
+jsonwebtoken = "8.1.1"
 log = "0.4.17"
 nu-ansi-term = "0.46.0"
 reqwest = { version = "0.11.12", features = ["json", "rustls"] }

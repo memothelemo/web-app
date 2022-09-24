@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use actix_web::{error, web, Error, HttpResponse, Responder};
+use actix_web::web::{self, ServiceConfig};
+use actix_web::{error, Error, HttpResponse, Responder};
+
 use backend_lib::db::{self, DbPool};
 
 use serde::Deserialize;
@@ -171,4 +173,8 @@ pub async fn post(pool: DbPool, form: web::Json<PostLetterForm>) -> Result<impl 
         "id": letter.id,
         "created_at": letter.created_at,
     })))
+}
+
+pub fn apply(cfg: &mut ServiceConfig) {
+    cfg.service(get_public).service(post);
 }

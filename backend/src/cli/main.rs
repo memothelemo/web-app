@@ -1,4 +1,5 @@
 use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::middleware;
 use actix_web::{App, HttpServer};
 
 use anyhow::{Context, Result};
@@ -42,17 +43,10 @@ async fn main() -> Result<()> {
 
     let server = HttpServer::new(move || {
         App::new()
-            // general API
-            .service(api::index)
-            .service(api::is_available)
-            // web-app Letters API
-            .service(api::letters::get_public)
-            .service(api::letters::post)
-            // web-app Report API
-            .service(api::reports::report_letter)
-            .service(api::reports::get_pending_letters)
+            .configure(api::apply)
             // middleware
             .wrap(Governor::new(&governor_conf))
+            .wrap(middleware::Logger::default())
             .app_data(db.clone())
     })
     .bind((address, port))?;

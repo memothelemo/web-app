@@ -1,9 +1,14 @@
-use actix_web::{error, web, Error, HttpResponse, Responder};
+use actix_web::{
+    error,
+    web::{self, ServiceConfig},
+    Error, HttpResponse, Responder,
+};
 use backend_lib::db::{self, DbPool};
 use serde_json::json;
 
 pub mod letters;
 pub mod reports;
+pub mod users;
 
 pub enum TestResult {
     TooFew,
@@ -29,4 +34,11 @@ pub async fn is_available(pool: DbPool) -> Result<impl Responder, Error> {
     Ok(HttpResponse::Ok().json(json!({
         "available": result,
     })))
+}
+
+pub fn apply(cfg: &mut ServiceConfig) {
+    cfg.configure(letters::apply)
+        .configure(users::apply)
+        .service(index)
+        .service(is_available);
 }
