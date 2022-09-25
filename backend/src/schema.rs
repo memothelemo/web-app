@@ -1,23 +1,46 @@
-use serde::{Deserialize, Serialize};
+// @generated automatically by Diesel CLI.
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct SubmissionState {
-    pub available: bool,
+diesel::table! {
+    letters (id) {
+        id -> Uuid,
+        created_at -> Timestamp,
+        author -> Varchar,
+        message -> Text,
+        secret -> Bool,
+    }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Letter {
-    pub created_at: String,
-    pub id: String,
-    pub author: String,
-    pub message: String,
-    pub secret: bool,
+diesel::table! {
+    reports (id) {
+        id -> Uuid,
+        email -> Varchar,
+        created_at -> Timestamp,
+        letter_id -> Uuid,
+        #[sql_name = "type"]
+        type_ -> Int4,
+        details -> Text,
+        resolved -> Bool,
+    }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct User {
-    pub created_at: String,
-    pub id: String,
-    pub username: String,
-    pub password: String,
+diesel::table! {
+    states (id) {
+        id -> Int4,
+        available -> Bool,
+    }
 }
+
+diesel::table! {
+    users (id) {
+        id -> Uuid,
+        created_at -> Timestamp,
+        name -> Varchar,
+        password -> Text,
+        moderator -> Nullable<Bool>,
+        viewer -> Nullable<Bool>,
+    }
+}
+
+diesel::joinable!(reports -> letters (letter_id));
+
+diesel::allow_tables_to_appear_in_same_query!(letters, reports, states, users,);
