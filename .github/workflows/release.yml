@@ -22,6 +22,17 @@ jobs:
         run: |
           cp ~/.cargo/bin/diesel .
 
+      - name: Caching Rust artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Copy the normal variant
         run: cp ./target/release/backend-bin ./backend-bin
 
