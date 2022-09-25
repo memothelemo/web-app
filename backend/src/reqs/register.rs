@@ -34,9 +34,7 @@ impl FromRequest for RegisterAuth {
             if authorized {
                 Ok(Self)
             } else {
-                Err(error::ErrorUnauthorized(json!({
-                    "message": "not authorized",
-                })))
+                Err(error::ErrorUnauthorized("Not authorized"))
             }
         })
     }

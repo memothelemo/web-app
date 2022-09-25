@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
 use actix_web::web::ServiceConfig;
-use actix_web::{error, web, Error, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder};
 
 use backend_lib::config::AuthParams;
 use backend_lib::db::{self, DbPool};
 use backend_lib::models;
+
 use backend_lib::reqs::user::UserRestrictions;
+use backend_lib::resp::error::{self, ApiError};
 
 use backend_lib::utils::letter::decrypt_message;
 use serde::Deserialize;
@@ -25,11 +27,9 @@ pub async fn resolve(
     restrictions: UserRestrictions,
     pool: DbPool,
     id: web::Path<Uuid>,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     if !restrictions.moderator {
-        Err(error::ErrorForbidden(json!({
-            "message": "not authorized to revoke reports",
-        })))
+        Err(error::ErrorForbidden("Not authorized to revoke reports"))
     } else {
         let pool = Arc::new(pool);
         let pool_1 = pool.clone();
@@ -45,11 +45,7 @@ pub async fn resolve(
 
         let report = match report {
             Some(n) => n,
-            None => {
-                return Err(error::ErrorNotFound(json!({
-                    "message": "report not found",
-                })))
-            }
+            None => return Err(error::ErrorNotFound("Report not found")),
         };
 
         // delete the report first before the letter
@@ -70,7 +66,7 @@ pub async fn resolve(
         .map_err(error::ErrorInternalServerError)?;
 
         Ok(HttpResponse::Accepted().json(json!({
-            "message": "report resolved",
+            "message": "Report resolved",
         })))
     }
 }
@@ -80,11 +76,9 @@ pub async fn revoke(
     restrictions: UserRestrictions,
     pool: DbPool,
     id: web::Path<Uuid>,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     if !restrictions.moderator {
-        Err(error::ErrorForbidden(json!({
-            "message": "not authorized to revoke reports",
-        })))
+        Err(error::ErrorForbidden("Not authorized to revoke reports"))
     } else {
         let pool = Arc::new(pool);
         let pool_1 = pool.clone();
@@ -99,9 +93,7 @@ pub async fn revoke(
         .map_err(error::ErrorInternalServerError)?;
 
         if report.is_none() {
-            return Err(error::ErrorNotFound(json!({
-                "message": "report not found",
-            })));
+            return Err(error::ErrorNotFound("Report not found"));
         }
 
         web::block(move || {
@@ -112,7 +104,7 @@ pub async fn revoke(
         .map_err(error::ErrorInternalServerError)?;
 
         Ok(HttpResponse::Accepted().json(json!({
-            "message": "report revoked",
+            "message": "Report revoked",
         })))
     }
 }
@@ -123,11 +115,9 @@ pub async fn get_pending_letters(
     restrictions: UserRestrictions,
     pool: DbPool,
     query: web::Query<RetrieveLetterQuery>,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     if !restrictions.moderator {
-        Err(error::ErrorForbidden(json!({
-            "message": "not authorized to view reports",
-        })))
+        Err(error::ErrorForbidden("Not authorized to view reports"))
     } else {
         let mut reports = web::block(move || {
             let mut conn = pool.get()?;
@@ -155,9 +145,7 @@ pub async fn get_pending_letters(
                     report.letter.id,
                     e
                 );
-                error::ErrorInternalServerError(
-                    "There's something wrong to our server, please try again later",
-                )
+                ApiError::we_pretend_why_it_does_error()
             })?;
             log::info!(
                 "[get_pending_letters] done decrypting report letter = {}",
@@ -183,7 +171,7 @@ pub async fn report_letter(
     letter_uid: web::Path<Uuid>,
     pool: DbPool,
     form: web::Json<ReportLetterForm>,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     let pool = Arc::new(pool);
     let pool_1 = pool.clone();
 
@@ -199,9 +187,9 @@ pub async fn report_letter(
 
     if letter.is_none() {
         log::warn!("[letter] non-existing letter id = {:?}", uuid);
-        return Err(error::ErrorConflict(json!({
-            "message": "attempt to report a non-existing letter",
-        })));
+        return Err(error::ErrorConflict(
+            "Attempt to report a non-existing letter",
+        ));
     }
 
     log::debug!("[letter] existing letter id = {:?}", uuid);
@@ -217,12 +205,17 @@ pub async fn report_letter(
     create_test_fn!(test_email, MAX_DETAILS_LEN, MIN_EMAIL_LEN);
     create_test_fn!(test_details, MAX_DETAILS_LEN);
 
-    test_contraints!(test_email, &email, "email too big", "email too small");
+    test_contraints!(
+        test_email,
+        &email,
+        "Email field is too big",
+        "Email field is too small"
+    );
     test_contraints!(
         test_details,
         &details,
-        "details too big",
-        "details too small"
+        "Details field is too big",
+        "Details field is too small"
     );
 
     let report = web::block(move || {

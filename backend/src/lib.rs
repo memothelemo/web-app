@@ -3,6 +3,7 @@ pub mod db;
 pub mod logger;
 pub mod models;
 pub mod reqs;
+pub mod resp;
 pub mod schema;
 pub mod utils;
 

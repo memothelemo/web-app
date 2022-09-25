@@ -4,14 +4,16 @@ use actix_web::cookie::time::Duration;
 use actix_web::cookie::{Cookie, SameSite};
 
 use actix_web::web::{self, ServiceConfig};
-use actix_web::{error, Error, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder};
 
 use anyhow::Context;
 
 use backend_lib::config::AuthParams;
 use backend_lib::db::{self, DbPool};
 use backend_lib::models::{NewUser, UserToken, TOKEN_EXPIRY_DURATION};
+
 use backend_lib::reqs::register::RegisterAuth;
+use backend_lib::resp::error::{self, ApiError};
 
 use serde::Deserialize;
 use serde_json::json;
@@ -29,7 +31,7 @@ static MAX_USERNAME_LEN: usize = 50;
 static MIN_PASSWORD_LEN: usize = 12;
 static MAX_PASSWORD_LEN: usize = 50;
 
-static INVALID_CREDIENTALS: &str = "invalid credientials";
+static INVALID_CREDIENTALS: &str = "Invalid credientials";
 
 create_test_fn!(test_password, MAX_PASSWORD_LEN, MIN_PASSWORD_LEN);
 create_test_fn!(test_username, MAX_USERNAME_LEN);
@@ -40,7 +42,7 @@ pub async fn register(
     pool: DbPool,
     auth_params: web::Data<AuthParams>,
     form: web::Json<UserForm>,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     test_contraints!(
         test_username,
         &form.username,
@@ -69,9 +71,7 @@ pub async fn register(
     .map_err(error::ErrorInternalServerError)?;
 
     if user.is_some() {
-        return Err(error::ErrorConflict(json!({
-            "message": "Already registered!",
-        })));
+        return Err(error::ErrorConflict("Already registered!"));
     }
 
     let formed_password = format!("{}{:?}{}", form.username, auth_params.salt, form.password);
@@ -82,9 +82,7 @@ pub async fn register(
         .with_context(|| "failed to hash password")
         .map_err(|e| {
             log::error!("[register] failed to generate password hash: {}", e);
-            error::ErrorInternalServerError(
-                "There's something wrong to our server, please try again later",
-            )
+            ApiError::we_pretend_why_it_does_error()
         })?;
 
     let user = web::block(move || {
@@ -111,7 +109,7 @@ pub async fn login(
     pool: DbPool,
     auth_params: web::Data<AuthParams>,
     form: web::Json<UserForm>,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     test_contraints!(
         test_password,
         &form.password,
@@ -132,26 +130,18 @@ pub async fn login(
 
     let user = match user {
         Some(n) => n,
-        None => {
-            return Err(error::ErrorUnauthorized(json!({
-                "message": INVALID_CREDIENTALS,
-            })))
-        }
+        None => return Err(error::ErrorUnauthorized(INVALID_CREDIENTALS)),
     };
 
     let formed_password = format!("{}{:?}{}", form.username, auth_params.salt, form.password);
     if !bcrypt::verify(&formed_password, &user.password).unwrap_or_default() {
-        return Err(error::ErrorUnauthorized(json!({
-            "message": INVALID_CREDIENTALS,
-        })));
+        return Err(error::ErrorUnauthorized(INVALID_CREDIENTALS));
     }
 
     let token =
         UserToken::generate_token(&user.id.to_string(), &auth_params.token).map_err(|e| {
             log::error!("[login] failed to generate jwt token: {}", e);
-            error::ErrorInternalServerError(
-                "There's something wrong to our server, please try again later",
-            )
+            ApiError::we_pretend_why_it_does_error()
         })?;
 
     let mut response = HttpResponse::Accepted().json(json!({

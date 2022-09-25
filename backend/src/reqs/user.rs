@@ -78,11 +78,7 @@ impl FromRequest for UserRestrictions {
             }
             None => {
                 log::debug!("[restrictions] not token found");
-                return Box::pin(async {
-                    Err(error::ErrorUnauthorized(json!({
-                        "message": "unauthorized",
-                    })))
-                });
+                return Box::pin(async { Err(error::ErrorUnauthorized("Unauthorized")) });
             }
         };
 
@@ -143,7 +139,7 @@ impl FromRequest for UserRestrictions {
         } else {
             Box::pin(async {
                 Err(error::ErrorUnauthorized(json!({
-                    "message": "unauthorized",
+                    "message": "Unauthorized",
                 })))
             })
         }

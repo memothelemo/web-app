@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
 use actix_web::web::{self, ServiceConfig};
-use actix_web::{error, Error, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder};
 
 use backend_lib::config::AuthParams;
 use backend_lib::db::{self, DbPool};
 use backend_lib::reqs::user::UserRestrictions;
+use backend_lib::resp::error::{self, ApiError};
 use backend_lib::utils::letter::{decrypt_message, encrypt_message};
 
 use serde::Deserialize;
@@ -15,12 +16,10 @@ use serde_json::json;
 macro_rules! test_contraints {
     ($fn:ident, $expr:expr, $too_big:expr, $too_small:expr) => {
         if let Some(result) = $fn($expr) {
-            return Err(error::ErrorConflict(json!({
-                "message": match result {
-                    crate::api::TestResult::TooFew => $too_small,
-                    crate::api::TestResult::TooBig => $too_big,
-                }
-            })));
+            return Err(error::ErrorConflict(match result {
+                crate::api::TestResult::TooFew => $too_small,
+                crate::api::TestResult::TooBig => $too_big,
+            }));
         }
     };
 }
@@ -81,14 +80,14 @@ pub async fn get_all(
     restrictions: UserRestrictions,
     query: web::Query<GetLettersQuery>,
     pool: DbPool,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     if restrictions.viewer {
         let length = query.length.unwrap_or(10);
         test_contraints!(
             test_query_len,
             length,
-            "query too big to handle",
-            "query too small to handle"
+            "Query is too big to handle",
+            "Query is too small to handle"
         );
 
         let offset = query.offset.unwrap_or_default();
@@ -126,9 +125,7 @@ pub async fn get_all(
         log::info!("[get_all] processing done ({:.2?})", now.elapsed());
         Ok(HttpResponse::Ok().json(letters))
     } else {
-        Err(error::ErrorForbidden(json!({
-            "message": "not authorized to get all letters",
-        })))
+        Err(error::ErrorForbidden("Not authorized to get all letters"))
     }
 }
 
@@ -136,13 +133,13 @@ pub async fn get_all(
 pub async fn get_public(
     query: web::Query<GetLettersQuery>,
     pool: DbPool,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     let length = query.length.unwrap_or(10);
     test_contraints!(
         test_query_len,
         length,
-        "query too big to handle",
-        "query too small to handle"
+        "Query length is too big to handle",
+        "Query length is too small to handle"
     );
 
     let offset = query.offset.unwrap_or_default();
@@ -167,7 +164,7 @@ pub async fn post(
     auth_params: web::Data<AuthParams>,
     pool: DbPool,
     form: web::Json<PostLetterForm>,
-) -> Result<impl Responder, Error> {
+) -> Result<impl Responder, ApiError> {
     log::info!("[post] user requested to post a letter");
 
     // check if we still accept submissions
@@ -180,9 +177,9 @@ pub async fn post(
     .map_err(error::ErrorInternalServerError)?;
 
     if !available {
-        return Err(error::ErrorUnauthorized(json!({
-            "message": "cannot accept any new submissions"
-        })));
+        return Err(error::ErrorUnauthorized(
+            "Cannot accept any new submissions",
+        ));
     }
 
     // validate also to the server and sanitize dirty HTML
@@ -214,7 +211,12 @@ pub async fn post(
     create_test_fn!(test_author, MAX_AUTHOR_LEN);
     create_test_fn!(test_message, MAX_MESSAGE_LEN, MIN_MESSAGE_LEN);
 
-    test_contraints!(test_author, &author, "author too big", "author too small");
+    test_contraints!(
+        test_author,
+        &author,
+        "Author field is too big",
+        "Author field is too small"
+    );
 
     // checking for existing letters with the author
     let pool = pool_1.clone();
@@ -229,9 +231,9 @@ pub async fn post(
     .map_err(error::ErrorInternalServerError)?;
 
     if letter.is_some() {
-        return Err(error::ErrorConflict(json!({
-            "message": "duplicated letter",
-        })));
+        return Err(error::ErrorConflict(
+            "Attempt to publish letter with the same author",
+        ));
     }
 
     let mut message = ammonia::clean(&form.message);
@@ -246,8 +248,8 @@ pub async fn post(
     test_contraints!(
         test_message,
         &message,
-        "message too big",
-        "message too small"
+        "Message field is too big",
+        "Message field is too small"
     );
     drop(letter);
 
@@ -258,9 +260,7 @@ pub async fn post(
             .await
             .map_err(|e| {
                 log::error!("[post] failed to encrypt message: {}", e);
-                error::ErrorInternalServerError(
-                    "There's something wrong to our server, please try again later",
-                )
+                ApiError::we_pretend_why_it_does_error()
             })?;
     }
 
