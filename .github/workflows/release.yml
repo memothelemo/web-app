@@ -15,6 +15,13 @@ jobs:
       - name: Build
         run: cargo build --verbose --release
 
+      - name: Install diesel-cli
+        run: cargo install diesel_cli --no-default-features --features postgres
+        
+      - name: Copy the diesel-cli binary
+        run: |
+          cp ~/.cargo/bin/diesel .
+
       - name: Copy the normal variant
         run: cp ./target/release/backend-bin ./backend-bin
 
@@ -30,3 +37,4 @@ jobs:
           files: |
             ./backend-bin-heroku
             ./backend-bin
+            ./diesel
