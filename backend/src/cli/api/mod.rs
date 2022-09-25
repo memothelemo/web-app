@@ -1,8 +1,6 @@
-use actix_web::{
-    error,
-    web::{self, ServiceConfig},
-    Error, HttpResponse, Responder,
-};
+use actix_web::web::{self, ServiceConfig};
+use actix_web::{error, Error, HttpResponse, Responder};
+
 use backend_lib::db::{self, DbPool};
 use serde_json::json;
 
@@ -39,6 +37,7 @@ pub async fn is_available(pool: DbPool) -> Result<impl Responder, Error> {
 pub fn apply(cfg: &mut ServiceConfig) {
     cfg.configure(letters::apply)
         .configure(users::apply)
+        .configure(reports::apply)
         .service(index)
         .service(is_available);
 }

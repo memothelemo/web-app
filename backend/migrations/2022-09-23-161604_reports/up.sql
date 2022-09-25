@@ -1,5 +1,5 @@
 CREATE TABLE reports(
-    id BIGSERIAL PRIMARY KEY NOT NULL,
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY NOT NULL,
     email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT now() NOT NULL,
     letter_id uuid NOT NULL,

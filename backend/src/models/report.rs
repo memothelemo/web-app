@@ -29,7 +29,7 @@ pub struct NewReport<'a> {
 #[derive(Debug, Deserialize, Serialize, Queryable)]
 #[diesel(belongs_to(Letter))]
 pub struct PendingReport {
-    pub id: i64,
+    pub id: Uuid,
     pub email: String,
     pub created_at: NaiveDateTime,
     pub letter_id: Uuid,
@@ -41,7 +41,7 @@ pub struct PendingReport {
 #[derive(Debug, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(belongs_to(Letter))]
 pub struct Report {
-    pub id: i64,
+    pub id: Uuid,
     pub email: String,
     pub created_at: NaiveDateTime,
     pub letter_id: Uuid,

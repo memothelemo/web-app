@@ -4,6 +4,15 @@ use anyhow::Result;
 use diesel::prelude::*;
 use uuid::Uuid;
 
+pub fn delete(conn: &mut PgConnection, letter_id: Uuid) -> Result<()> {
+    log::info!("[delete] deleting letter {}", letter_id);
+
+    use crate::schema::letters::dsl::*;
+    diesel::delete(letters.filter(id.eq(letter_id))).execute(conn)?;
+
+    Ok(())
+}
+
 pub fn insert(
     conn: &mut PgConnection,
     entry_author: impl AsRef<str>,
@@ -30,26 +39,34 @@ pub fn insert(
         .get_result(conn)?)
 }
 
-pub fn get_all(conn: &mut PgConnection, offset: usize) -> Result<Vec<models::Letter>> {
+pub fn get_all(
+    conn: &mut PgConnection,
+    limit: usize,
+    offset: usize,
+) -> Result<Vec<models::Letter>> {
     log::info!("getting all entries");
     use crate::schema::letters::dsl::*;
 
     let collection = letters
         .offset(offset.max(0) as i64)
-        .limit(10)
+        .limit(limit as i64)
         .load::<models::Letter>(conn)?;
 
     Ok(collection)
 }
 
-pub fn get_all_public(conn: &mut PgConnection, offset: usize) -> Result<Vec<models::Letter>> {
+pub fn get_all_public(
+    conn: &mut PgConnection,
+    limit: usize,
+    offset: usize,
+) -> Result<Vec<models::Letter>> {
     log::info!("getting all public entries");
     use crate::schema::letters::dsl::*;
 
     let collection = letters
         .filter(secret.eq(false))
         .offset(offset.max(0) as i64)
-        .limit(10)
+        .limit(limit as i64)
         .load::<models::Letter>(conn)?;
 
     Ok(collection)

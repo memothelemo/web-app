@@ -4,6 +4,27 @@ use anyhow::Result;
 use diesel::prelude::*;
 use uuid::Uuid;
 
+pub fn delete(conn: &mut PgConnection, report_id: Uuid) -> Result<()> {
+    log::info!("[delete] deleting report {}", report_id);
+    use crate::schema::reports::dsl::*;
+
+    diesel::delete(reports.filter(id.eq(report_id))).execute(conn)?;
+    Ok(())
+}
+
+pub fn get(conn: &mut PgConnection, report_id: Uuid) -> Result<Option<models::PendingReport>> {
+    log::info!("[get] get report {}", report_id);
+    use crate::schema::reports::dsl::*;
+
+    let report = reports
+        .filter(id.eq(report_id))
+        .select((id, email, created_at, letter_id, type_, details))
+        .first::<models::PendingReport>(conn)
+        .optional()?;
+
+    Ok(report)
+}
+
 pub fn get_all_pending(
     conn: &mut PgConnection,
     offset: usize,

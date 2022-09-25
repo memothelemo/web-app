@@ -12,7 +12,7 @@ diesel::table! {
 
 diesel::table! {
     reports (id) {
-        id -> Int8,
+        id -> Uuid,
         email -> Varchar,
         created_at -> Timestamp,
         letter_id -> Uuid,
@@ -37,14 +37,10 @@ diesel::table! {
         name -> Varchar,
         password -> Text,
         moderator -> Nullable<Bool>,
+        viewer -> Nullable<Bool>,
     }
 }
 
 diesel::joinable!(reports -> letters (letter_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    letters,
-    reports,
-    states,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(letters, reports, states, users,);
