@@ -14,6 +14,7 @@ test_log = []
 
 [dependencies]
 actix-governor = "0.3"
+actix-session = "0.7.2"
 actix-web = { version = "4.2.1", features = ["openssl"] }
 aes = "0.8.1"
 ammonia = "3.2.1"

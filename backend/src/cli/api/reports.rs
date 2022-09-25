@@ -217,12 +217,12 @@ pub async fn report_letter(
     create_test_fn!(test_email, MAX_DETAILS_LEN, MIN_EMAIL_LEN);
     create_test_fn!(test_details, MAX_DETAILS_LEN);
 
-    test_contraints!(test_email, &email, "email too small", "email too big");
+    test_contraints!(test_email, &email, "email too big", "email too small");
     test_contraints!(
         test_details,
         &details,
-        "details too small",
-        "details too big"
+        "details too big",
+        "details too small"
     );
 
     let report = web::block(move || {

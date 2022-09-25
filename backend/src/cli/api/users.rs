@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use actix_web::cookie::time::Duration;
-use actix_web::cookie::Cookie;
+use actix_web::cookie::{Cookie, SameSite};
 
 use actix_web::web::{self, ServiceConfig};
 use actix_web::{error, Error, HttpResponse, Responder};
@@ -44,14 +44,14 @@ pub async fn register(
     test_contraints!(
         test_username,
         &form.username,
-        "username too short",
-        "username too long"
+        "username too long",
+        "username too short"
     );
     test_contraints!(
         test_password,
         &form.password,
-        "password too short",
-        "password too long"
+        "password too long",
+        "password too short"
     );
 
     // check for any duplications
@@ -155,13 +155,18 @@ pub async fn login(
         })?;
 
     let mut response = HttpResponse::Accepted().json(json!({
-        "message": "Logged in!",
+        "id": user.id,
+        "created_at": user.created_at,
+        "moderator": user.moderator,
+        "viewer": user.viewer,
     }));
 
     response
         .add_cookie(
             &Cookie::build("token", token)
                 .max_age(Duration::seconds(TOKEN_EXPIRY_DURATION))
+                .same_site(SameSite::Lax)
+                .path("/")
                 .finish(),
         )
         .map_err(error::ErrorInternalServerError)?;

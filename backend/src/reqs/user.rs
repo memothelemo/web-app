@@ -29,6 +29,7 @@ impl FromRequest for UserRestrictions {
         req: &actix_web::HttpRequest,
         _payload: &mut actix_web::dev::Payload,
     ) -> Self::Future {
+        log::debug!("[restrictions] getting AuthParams");
         let params = match req.app_data::<web::Data<AuthParams>>() {
             Some(n) => n,
             None => {
@@ -40,32 +41,48 @@ impl FromRequest for UserRestrictions {
             }
         };
 
-        let auth = if let Some(auth) = req.headers().get("authorization") {
+        log::debug!("[restrictions] getting token");
+        let token = if let Some(auth) = req.headers().get("authorization") {
             if let Ok(auth) = auth.to_str() {
                 if let Some(auth) = auth.strip_prefix("Bearer ") {
-                    Some(UserToken::decode_token(&auth, &params.token).map_err(|e| {
-                        log::error!("[UserRestrictions] failed to decode token: {}", e);
-                        error::ErrorInternalServerError("Failed to evaluate token")
-                    }))
+                    log::debug!("[restrictions] using Authorization header");
+                    Some(auth.to_string())
                 } else {
                     None
                 }
             } else {
                 None
             }
+        } else if let Some(cookie) = req.cookie("token") {
+            // maybe from the cookies?
+            log::debug!("[restrictions] using from the cookie");
+            Some(cookie.value().to_string())
         } else {
             None
         };
 
+        log::debug!("[restrictions] decoding token");
+        let auth = match token {
+            Some(token) => Some(UserToken::decode_token(&token, &params.token).map_err(|e| {
+                log::error!("[UserRestrictions] failed to decode token: {}", e);
+                error::ErrorInternalServerError("Failed to evaluate token")
+            })),
+            None => None,
+        };
+
         let token_data = match auth {
             Some(Ok(n)) => n,
-            Some(Err(err)) => return Box::pin(async { Err(err) }),
+            Some(Err(err)) => {
+                log::debug!("[restrictions] got a token error");
+                return Box::pin(async { Err(err) });
+            }
             None => {
+                log::debug!("[restrictions] not token found");
                 return Box::pin(async {
                     Err(error::ErrorUnauthorized(json!({
                         "message": "unauthorized",
                     })))
-                })
+                });
             }
         };
 
