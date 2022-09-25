@@ -1,3 +1,4 @@
+use super::Letter;
 use crate::models::prelude::*;
 
 #[derive(Debug, Clone, Copy, Deserialize_repr, Serialize_repr, PartialEq, Eq, PartialOrd, Ord)]
@@ -32,7 +33,7 @@ pub struct PendingReport {
     pub id: Uuid,
     pub email: String,
     pub created_at: NaiveDateTime,
-    pub letter_id: Uuid,
+    pub letter: Letter,
     #[serde(rename = "type")]
     pub type_: i32,
     pub details: String,

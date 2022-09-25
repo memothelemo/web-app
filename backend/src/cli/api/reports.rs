@@ -3,10 +3,12 @@ use std::sync::Arc;
 use actix_web::web::ServiceConfig;
 use actix_web::{error, web, Error, HttpResponse, Responder};
 
+use backend_lib::config::AuthParams;
 use backend_lib::db::{self, DbPool};
 use backend_lib::models;
 use backend_lib::reqs::user::UserRestrictions;
 
+use backend_lib::utils::letter::decrypt_message;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -18,16 +20,11 @@ pub struct RetrieveLetterQuery {
     offset: Option<usize>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ReportActionQuery {
-    id: Uuid,
-}
-
-#[actix_web::delete("/api/reports/resolve")]
+#[actix_web::delete("/api/reports/resolve/{id}")]
 pub async fn resolve(
     restrictions: UserRestrictions,
     pool: DbPool,
-    query: web::Query<ReportActionQuery>,
+    id: web::Path<Uuid>,
 ) -> Result<impl Responder, Error> {
     if !restrictions.moderator {
         Err(error::ErrorForbidden(json!({
@@ -37,11 +34,11 @@ pub async fn resolve(
         let pool = Arc::new(pool);
         let pool_1 = pool.clone();
 
-        let id = query.id.clone();
+        let id_1 = id.clone();
 
         let report = web::block(move || {
             let mut conn = pool.get()?;
-            db::reports::get(&mut conn, id)
+            db::reports::get_pending(&mut conn, id_1)
         })
         .await?
         .map_err(error::ErrorInternalServerError)?;
@@ -60,7 +57,7 @@ pub async fn resolve(
         let pool = pool_1.clone();
         web::block(move || {
             let mut conn = pool_1.get()?;
-            db::reports::delete(&mut conn, query.id)
+            db::reports::delete(&mut conn, id.into_inner())
         })
         .await?
         .map_err(error::ErrorInternalServerError)?;
@@ -82,7 +79,7 @@ pub async fn resolve(
 pub async fn revoke(
     restrictions: UserRestrictions,
     pool: DbPool,
-    query: web::Query<ReportActionQuery>,
+    id: web::Path<Uuid>,
 ) -> Result<impl Responder, Error> {
     if !restrictions.moderator {
         Err(error::ErrorForbidden(json!({
@@ -92,11 +89,11 @@ pub async fn revoke(
         let pool = Arc::new(pool);
         let pool_1 = pool.clone();
 
-        let id = query.id.clone();
+        let id_1 = id.clone();
 
         let report = web::block(move || {
             let mut conn = pool.get()?;
-            db::reports::get(&mut conn, id)
+            db::reports::get_pending(&mut conn, id_1)
         })
         .await?
         .map_err(error::ErrorInternalServerError)?;
@@ -109,7 +106,7 @@ pub async fn revoke(
 
         web::block(move || {
             let mut conn = pool_1.get()?;
-            db::reports::delete(&mut conn, query.id)
+            db::reports::delete(&mut conn, id.into_inner())
         })
         .await?
         .map_err(error::ErrorInternalServerError)?;
@@ -122,6 +119,7 @@ pub async fn revoke(
 
 #[actix_web::get("/api/reports/letters")]
 pub async fn get_pending_letters(
+    auth_params: web::Data<AuthParams>,
     restrictions: UserRestrictions,
     pool: DbPool,
     query: web::Query<RetrieveLetterQuery>,
@@ -131,14 +129,44 @@ pub async fn get_pending_letters(
             "message": "not authorized to view reports",
         })))
     } else {
-        let letters = web::block(move || {
+        let mut reports = web::block(move || {
             let mut conn = pool.get()?;
             db::reports::get_all_pending(&mut conn, query.offset.unwrap_or_default())
         })
         .await?
         .map_err(error::ErrorInternalServerError)?;
 
-        Ok(HttpResponse::Ok().json(letters))
+        log::info!("[get_pending_letters] processing reports");
+        let encrypted_reports = reports.iter_mut().filter(|v| v.letter.secret);
+        for report in encrypted_reports {
+            log::info!(
+                "[get_pending_letters] secret letter found (id = {}); decrypting...",
+                report.letter.id
+            );
+            let message = decrypt_message(
+                &auth_params.secret_key,
+                &report.letter.author,
+                &report.letter.message,
+            )
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[get_pending_letters] failed to decrypt report letter message (id = {:?}): {}",
+                    report.letter.id,
+                    e
+                );
+                error::ErrorInternalServerError(
+                    "There's something wrong to our server, please try again later",
+                )
+            })?;
+            log::info!(
+                "[get_pending_letters] done decrypting report letter = {}",
+                report.letter.id
+            );
+            report.letter.message = message;
+        }
+
+        Ok(HttpResponse::Ok().json(reports))
     }
 }
 
@@ -211,5 +239,8 @@ pub async fn report_letter(
 }
 
 pub fn apply(cfg: &mut ServiceConfig) {
-    cfg.service(get_pending_letters).service(report_letter);
+    cfg.service(resolve)
+        .service(revoke)
+        .service(get_pending_letters)
+        .service(report_letter);
 }

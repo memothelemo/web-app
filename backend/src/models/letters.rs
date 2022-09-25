@@ -1,6 +1,6 @@
 use crate::models::prelude::*;
 
-#[derive(Debug, Deserialize, Serialize, Queryable, Insertable)]
+#[derive(Debug, Deserialize, Serialize, Queryable, Insertable, Identifiable)]
 pub struct Letter {
     pub id: Uuid,
     pub created_at: NaiveDateTime,

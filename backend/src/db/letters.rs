@@ -5,7 +5,7 @@ use diesel::prelude::*;
 use uuid::Uuid;
 
 pub fn delete(conn: &mut PgConnection, letter_id: Uuid) -> Result<()> {
-    log::info!("[delete] deleting letter {}", letter_id);
+    log::info!("[delete] id = {}", letter_id);
 
     use crate::schema::letters::dsl::*;
     diesel::delete(letters.filter(id.eq(letter_id))).execute(conn)?;
