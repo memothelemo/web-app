@@ -20,7 +20,7 @@ pub fn init_logger() -> anyhow::Result<()> {
         let log_file_path = log_path.join(log_file_path.to_string());
 
         // not as pretty as stdio logger but good enough to read the *.log file
-        let file_cfg = fern::Dispatch::new()
+        fern::Dispatch::new()
             .format(|out, message, record| {
                 out.finish(format_args!(
                     "[{}][{}][{}] {}",
@@ -30,7 +30,7 @@ pub fn init_logger() -> anyhow::Result<()> {
                     message
                 ))
             })
-            .chain(fern::log_file(log_file_path).with_context(|| "failed to enter log file")?);
+            .chain(fern::log_file(log_file_path).with_context(|| "failed to enter log file")?)
     };
 
     // custom env_logger style in fern
