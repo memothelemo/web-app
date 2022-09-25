@@ -19,7 +19,7 @@ jobs:
         run: cp ./target/release/backend-bin ./backend-bin
 
       - name: Build for the Heroku variant
-        run: cargo build --verbose --release --features heroku
+        run: cargo build --verbose --release --features hosting --features file_logging
 
       - name: Copy the Heroku variant
         run: cp ./target/release/backend-bin ./backend-bin-heroku
