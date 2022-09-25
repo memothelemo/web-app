@@ -34,7 +34,7 @@ generate_16_bytes_fn!(secret_aes_key, "SECRET_KEY");
 pub fn server_port() -> Result<u16> {
     #[rustfmt::skip]
     fn default() -> u16 {
-        #[cfg(not(feature = "heroku"))] { 3080 }
+        #[cfg(not(feature = "hosting"))] { 3080 }
         #[cfg(feature = "hosting")] { 80 }
     }
 
@@ -49,7 +49,7 @@ pub fn server_port() -> Result<u16> {
 pub fn server_address() -> Result<Ipv4Addr> {
     #[rustfmt::skip]
     fn default() -> Ipv4Addr {
-        #[cfg(not(feature = "heroku"))] { Ipv4Addr::new(127, 0, 0, 1) }
+        #[cfg(not(feature = "hosting"))] { Ipv4Addr::new(127, 0, 0, 1) }
         #[cfg(feature = "hosting")] { Ipv4Addr::new(127, 0, 0, 1) }
     }
 
